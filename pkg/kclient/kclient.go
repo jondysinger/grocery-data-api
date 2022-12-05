@@ -8,180 +8,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
+
+	"github.com/jondysinger/grocery-data-api/pkg/models"
 )
-
-type AuthorizationResponse struct {
-	ExpiresIn   int    `json:"expires_in"`
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type"`
-}
-
-type ApiErrorResponse struct {
-	Errors struct {
-		TimeStamp int    `json:"timestamp"`
-		Code      string `json:"code"`
-		Reason    string `json:"reason"`
-	} `json:"errors"`
-}
-
-type AuthErrorResponse struct {
-	Error            string `json:"error"`
-	ErrorDescription string `json:"error_description"`
-}
-
-type Location struct {
-	LocationId string `json:"locationId"`
-	Chain      string `json:"chain"`
-	Address    struct {
-		AddressLine1 string `json:"addressLine1"`
-		City         string `json:"city"`
-		State        string `json:"state"`
-		ZipCode      string `json:"zipCode"`
-		County       string `json:"county"`
-	} `json:"address"`
-	Geolocation struct {
-		Latitude  float32 `json:"latitude"`
-		Longitude float32 `json:"longitude"`
-		LatLng    string  `json:"latLng"`
-	} `json:"geolocation"`
-	Name  string `json:"Name"`
-	Hours struct {
-		Timezone  string `json:"timezone"`
-		GmtOffset string `json:"gmtOffset"`
-		Open24    bool   `json:"open24"`
-		Monday    struct {
-			Open   string `json:"open"`
-			Close  string `json:"close"`
-			Open24 bool   `json:"open24"`
-		} `json:"monday"`
-		Tuesday struct {
-			Open   string `json:"open"`
-			Close  string `json:"close"`
-			Open24 bool   `json:"open24"`
-		} `json:"tuesday"`
-		Wednesday struct {
-			Open   string `json:"open"`
-			Close  string `json:"close"`
-			Open24 bool   `json:"open24"`
-		} `json:"wednesday"`
-		Thursday struct {
-			Open   string `json:"open"`
-			Close  string `json:"close"`
-			Open24 bool   `json:"open24"`
-		} `json:"thursday"`
-		Friday struct {
-			Open   string `json:"open"`
-			Close  string `json:"close"`
-			Open24 bool   `json:"open24"`
-		} `json:"friday"`
-		Saturday struct {
-			Open   string `json:"open"`
-			Close  string `json:"close"`
-			Open24 bool   `json:"open24"`
-		} `json:"saturday"`
-		Sunday struct {
-			Open   string `json:"open"`
-			Close  string `json:"close"`
-			Open24 bool   `json:"open24"`
-		} `json:"sunday"`
-	} `json:"hours"`
-	Phone       string `json:"phone"`
-	Departments []struct {
-		DepartmentID string `json:"departmentId"`
-		Name         string `json:"name"`
-	} `json:"departments"`
-}
-
-type LocationsResponse struct {
-	Data []Location `json:"data"`
-	Meta struct {
-		Pagination struct {
-			Total int `json:"total"`
-			Start int `json:"start"`
-			Limit int `json:"limit"`
-		} `json:"pagination"`
-		Warnings []string `json:"warnings"`
-	} `json:"meta"`
-}
-
-type Product struct {
-	ProductId      string `json:"productId"`
-	AisleLocations []struct {
-		BayNumber          string `json:"bayNumber"`
-		Description        string `json:"description"`
-		Number             string `json:"number"`
-		NumberOfFacings    string `json:"numberOfFacings"`
-		SequenceNumber     string `json:"sequenceNumber"`
-		Side               string `json:"side"`
-		ShelfNumber        string `json:"shelfNumber"`
-		ShelfPositionInBay string `json:"shelfPositionInBay"`
-	} `json:"aisleLocations"`
-	Brand         string   `json:"brand"`
-	Categories    []string `json:"categories"`
-	CountryOrigin string   `json:"countryOrigin"`
-	Description   string   `json:"description"`
-	Items         []struct {
-		ItemId    string `json:"itemId"`
-		Inventory struct {
-			StockLevel string `json:"stockLevel"`
-		} `json:"inventory"`
-		Favorite    bool `json:"favorite"`
-		Fulfillment struct {
-			Curbside   bool `json:"curbside"`
-			Delivery   bool `json:"delivery"`
-			InStore    bool `json:"instore"`
-			ShipToHome bool `json:"shiptohome"`
-		} `json:"fulfillment"`
-		Price struct {
-			Regular                float32 `json:"regular"`
-			Promo                  float32 `json:"promo"`
-			RegularPerUnitEstimate float32 `json:"regularPerUnitEstimate"`
-			PromoPerUnitEstimate   float32 `json:"promoPerUnitEstimate"`
-		} `json:"price"`
-		NationalPrice struct {
-			Regular                float32 `json:"regular"`
-			Promo                  float32 `json:"promo"`
-			RegularPerUnitEstimate float32 `json:"regularPerUnitEstimate"`
-			PromoPerUnitEstimate   float32 `json:"promoPerUnitEstimate"`
-		} `json:"nationalPrice"`
-		Size   string `json:"size"`
-		SoldBy string `json:"soldBy"`
-	} `json:"items"`
-	ItemInformation struct {
-		Depth  string `json:"depth"`
-		Height string `json:"height"`
-		Width  string `json:"width"`
-	} `json:"itemInformation"`
-	Temperature struct {
-		Indicator     string `json:"indicator"`
-		HeatSensitive bool   `json:"heatSensitive"`
-	} `json:"temperature"`
-	Images []struct {
-		Id          string `json:"id"`
-		Perspective string `json:"perspective"`
-		Default     bool   `json:"default"`
-		Sizes       []struct {
-			Id   string `json:"id"`
-			Size string `json:"size"`
-			Url  string `json:"url"`
-		} `json:"sizes"`
-	} `json:"images"`
-	Upc string `json:"upc"`
-}
-
-type ProductsResponse struct {
-	Data []Product `json:"data"`
-	Meta struct {
-		Pagination struct {
-			Total int `json:"total"`
-			Start int `json:"start"`
-			Limit int `json:"limit"`
-		} `json:"pagination"`
-		Warnings []string `json:"warnings"`
-	} `json:"meta"`
-}
 
 // Struct for interaction with Kroger API
 type KClient struct {
@@ -215,7 +45,7 @@ func New(baseUrl string, id string, secret string, chain string) (*KClient, erro
 
 // Gets the error description from a Kroger API error response (status codes 400 or 500)
 func getApiErrorDesc(body []byte) (string, error) {
-	var errRes ApiErrorResponse
+	var errRes models.ApiErrorResponse
 	if err := json.Unmarshal(body, &errRes); err != nil {
 		return "", fmt.Errorf("failed to deserialize JSON response body: %v", err)
 	}
@@ -224,7 +54,7 @@ func getApiErrorDesc(body []byte) (string, error) {
 
 // Gets the error description from a Kroger Authorization error response (status code 401)
 func getAuthErrorDesc(body []byte) (string, error) {
-	var errRes AuthErrorResponse
+	var errRes models.AuthErrorResponse
 	if err := json.Unmarshal(body, &errRes); err != nil {
 		return "", fmt.Errorf("failed to deserialize JSON response body: %v", err)
 	}
@@ -278,7 +108,7 @@ func (client *KClient) GetAuthToken() error {
 		return getResponseError(res.StatusCode, res.Status, body)
 	}
 
-	var authRes AuthorizationResponse
+	var authRes models.AuthorizationResponse
 	if err := json.Unmarshal(body, &authRes); err != nil {
 		return fmt.Errorf("failed to deserialize JSON response body: %v", err)
 	}
@@ -287,27 +117,23 @@ func (client *KClient) GetAuthToken() error {
 	return nil
 }
 
-// Counts the number of digits in a string
-func countDigits(numberString string) (digits int) {
-	for _, char := range strings.Split(numberString, "") {
-		if _, err := strconv.Atoi(char); err == nil {
-			digits++
-		}
-	}
-	return digits
-}
-
 // Gets Kroger locations by zip code
-func (client *KClient) GetLocations(zipCode string) ([]Location, error) {
+func (client *KClient) GetLocations(zipCode string, filterLimit int) (*models.LocationsResponse, error) {
 	if client.token == "" {
 		return nil, errors.New("client has no OAuth2 token, call GetAuthToken first")
 	} else if zipCode == "" {
 		return nil, errors.New("parameter 'zipCode' is required")
 	} else if digits := countDigits(zipCode); digits < 5 || digits != len(zipCode) {
 		return nil, fmt.Errorf("parameter 'zipCode' value '%s' is invalid. Must be a number with 5 digits", zipCode)
+	} else if filterLimit < 0 || filterLimit > 200 {
+		return nil, fmt.Errorf("parameter 'filterLimit' value %d is invalid. Valid values are 0 to 200", filterLimit)
 	}
 
 	reqUrl := fmt.Sprintf("%s/locations?filter.chain=%s&filter.zipCode.near=%s", client.baseUrl, client.chain, url.QueryEscape(zipCode))
+
+	if filterLimit > 0 {
+		reqUrl = fmt.Sprintf("%s&filter.limit=%d", reqUrl, filterLimit)
+	}
 
 	// API Reference: https://developer.kroger.com/reference#operation/SearchLocations
 	req, err := http.NewRequest("GET", reqUrl, nil)
@@ -330,17 +156,17 @@ func (client *KClient) GetLocations(zipCode string) ([]Location, error) {
 		return nil, getResponseError(res.StatusCode, res.Status, body)
 	}
 
-	var locsResp LocationsResponse
+	var locsResp models.LocationsResponse
 	if err := json.Unmarshal(body, &locsResp); err != nil {
 		return nil, fmt.Errorf("failed to deserialize JSON response body: %v", err)
 	}
 
-	return locsResp.Data, nil
+	return &locsResp, nil
 }
 
 // Gets Kroger products based on a given search term. A locationId is optional and if given the product information
 // will contain stock levels and pricing.
-func (client *KClient) GetProducts(filterTerm string, locationId string, filterOffset int, filterLimit int) ([]Product, error) {
+func (client *KClient) GetProducts(filterTerm string, locationId string, filterOffset int, filterLimit int) (*models.ProductsResponse, error) {
 	if client.token == "" {
 		return nil, errors.New("client has no OAuth2 token, call GetAuthToken first")
 	} else if filterTerm == "" {
@@ -385,10 +211,10 @@ func (client *KClient) GetProducts(filterTerm string, locationId string, filterO
 		return nil, getResponseError(res.StatusCode, res.Status, body)
 	}
 
-	var prodResp ProductsResponse
+	var prodResp models.ProductsResponse
 	if err := json.Unmarshal(body, &prodResp); err != nil {
 		return nil, fmt.Errorf("failed to deserialize JSON response body: %v", err)
 	}
 
-	return prodResp.Data, nil
+	return &prodResp, nil
 }

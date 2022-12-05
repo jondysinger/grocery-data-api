@@ -1,22 +1,23 @@
 package envcfg
 
 import (
-	"fmt"
+	"log"
 	"os"
 )
 
 type EnvCfg struct {
-	BaseUrl      string
-	ClientId     string
-	ClientSecret string
-	Chain        string
+	Port                  string
+	KrogerApiBaseUrl      string
+	KrogerApiClientId     string
+	KrogerApiClientSecret string
+	KrogerApiChain        string
 }
 
 func Get() *EnvCfg {
 	mustGetenv := func(k string) string {
 		v := os.Getenv(k)
 		if v == "" {
-			panic(fmt.Sprintf("warning: %s environment variable not set", k))
+			log.Fatalf("warning: %s environment variable not set", k)
 		}
 		return v
 	}
@@ -24,10 +25,11 @@ func Get() *EnvCfg {
 	var cfg EnvCfg
 
 	// Get environment variables
-	cfg.BaseUrl = mustGetenv("KROGER_API_BASE_URL")
-	cfg.ClientId = mustGetenv("KROGER_API_CLIENT_ID")
-	cfg.ClientSecret = mustGetenv("KROGER_API_CLIENT_SECRET")
-	cfg.Chain = mustGetenv("KROGER_API_CHAIN_FRED")
+	cfg.Port = mustGetenv("PORT")
+	cfg.KrogerApiBaseUrl = mustGetenv("KROGER_API_BASE_URL")
+	cfg.KrogerApiClientId = mustGetenv("KROGER_API_CLIENT_ID")
+	cfg.KrogerApiClientSecret = mustGetenv("KROGER_API_CLIENT_SECRET")
+	cfg.KrogerApiChain = mustGetenv("KROGER_API_CHAIN_FRED")
 
 	return &cfg
 }
