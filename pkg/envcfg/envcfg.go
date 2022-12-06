@@ -29,7 +29,7 @@ func Get() *EnvCfg {
 	cfg.KrogerApiBaseUrl = mustGetenv("KROGER_API_BASE_URL")
 	cfg.KrogerApiClientId = mustGetenv("KROGER_API_CLIENT_ID")
 	cfg.KrogerApiClientSecret = mustGetenv("KROGER_API_CLIENT_SECRET")
-	cfg.KrogerApiChain = mustGetenv("KROGER_API_CHAIN_FRED")
+	cfg.KrogerApiChain = mustGetenv("KROGER_API_CHAIN")
 
 	return &cfg
 }
