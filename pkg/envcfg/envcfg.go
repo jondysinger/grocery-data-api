@@ -11,6 +11,7 @@ type EnvCfg struct {
 	KrogerApiClientId     string
 	KrogerApiClientSecret string
 	KrogerApiChain        string
+	GroceryDataAppUrl     string
 }
 
 func Get() *EnvCfg {
@@ -30,6 +31,7 @@ func Get() *EnvCfg {
 	cfg.KrogerApiClientId = mustGetenv("KROGER_API_CLIENT_ID")
 	cfg.KrogerApiClientSecret = mustGetenv("KROGER_API_CLIENT_SECRET")
 	cfg.KrogerApiChain = mustGetenv("KROGER_API_CHAIN")
+	cfg.GroceryDataAppUrl = mustGetenv("GROCERY_DATA_APP_URL")
 
 	return &cfg
 }

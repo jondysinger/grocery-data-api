@@ -5,15 +5,25 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 func (app *application) routes() http.Handler {
-	mux := chi.NewRouter()
+	r := chi.NewRouter()
 
-	mux.Use(middleware.Recoverer)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{app.Config.GroceryDataAppUrl},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 
-	mux.Get("/locations", app.Locations)
-	mux.Get("/products", app.Products)
+	r.Use(middleware.Recoverer)
 
-	return mux
+	r.Get("/locations", app.Locations)
+	r.Get("/products", app.Products)
+
+	return r
 }
