@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/jondysinger/grocery-data-api/pkg/models"
 )
+
+const maxAttempts = 6
 
 // Struct for interaction with Kroger API
 type KClient struct {
@@ -94,34 +97,48 @@ func (client *KClient) GetAuthToken() error {
 	reqUrl := fmt.Sprintf("%s/connect/oauth2/token", client.baseUrl)
 	payload := strings.NewReader("grant_type=client_credentials&scope=product.compact")
 
-	// API Reference: https://developer.kroger.com/reference#operation/accessToken
-	req, err := http.NewRequest("POST", reqUrl, payload)
-	if err != nil {
-		return fmt.Errorf("request failed: %v", err)
-	}
+	var attempts = 0
+	for {
+		// Exponential backoff for retry on failed attempt
+		if attempts > maxAttempts {
+			return fmt.Errorf("exceeded maximum retries")
+		} else if attempts > 0 {
+			var delay = 5 * math.Pow(2, float64(attempts))
+			time.Sleep(time.Second * time.Duration(delay))
+		}
 
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", client.id, client.secret)))))
-	res, err := client.netClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("request failed: %v", err)
-	}
+		// API Reference: https://developer.kroger.com/reference#operation/accessToken
+		req, err := http.NewRequest("POST", reqUrl, payload)
+		if err != nil {
+			return fmt.Errorf("request failed: %v", err)
+		}
 
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %v", err)
-	} else if res.StatusCode != 200 {
-		return getResponseError(res.StatusCode, res.Status, body)
-	}
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Add("Authorization", fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", client.id, client.secret)))))
+		res, err := client.netClient.Do(req)
+		if err != nil {
+			return fmt.Errorf("request failed: %v", err)
+		}
 
-	var authRes models.AuthorizationResponse
-	if err := json.Unmarshal(body, &authRes); err != nil {
-		return fmt.Errorf("failed to deserialize JSON response body: %v", err)
-	}
+		defer res.Body.Close()
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read response body: %v", err)
+		} else if res.StatusCode >= 500 {
+			attempts++
+			continue // Retry on internal server errors
+		} else if res.StatusCode != 200 {
+			return getResponseError(res.StatusCode, res.Status, body)
+		}
 
-	client.token = authRes.AccessToken
-	return nil
+		var authRes models.AuthorizationResponse
+		if err := json.Unmarshal(body, &authRes); err != nil {
+			return fmt.Errorf("failed to deserialize JSON response body: %v", err)
+		}
+
+		client.token = authRes.AccessToken
+		return nil
+	}
 }
 
 // Gets Kroger locations by zip code
@@ -142,33 +159,47 @@ func (client *KClient) GetLocations(zipCode string, filterLimit int) (*models.Lo
 		reqUrl = fmt.Sprintf("%s&filter.limit=%d", reqUrl, filterLimit)
 	}
 
-	// API Reference: https://developer.kroger.com/reference#operation/SearchLocations
-	req, err := http.NewRequest("GET", reqUrl, nil)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %v", err)
-	}
+	var attempts = 0
+	for {
+		// Exponential backoff for retry on failed attempt
+		if attempts > maxAttempts {
+			return nil, fmt.Errorf("exceeded maximum retries")
+		} else if attempts > 0 {
+			var delay = 5 * math.Pow(2, float64(attempts))
+			time.Sleep(time.Second * time.Duration(delay))
+		}
 
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.token))
-	res, err := client.netClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %v", err)
-	}
+		// API Reference: https://developer.kroger.com/reference#operation/SearchLocations
+		req, err := http.NewRequest("GET", reqUrl, nil)
+		if err != nil {
+			return nil, fmt.Errorf("request failed: %v", err)
+		}
 
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %v", err)
-	} else if res.StatusCode != 200 {
-		return nil, getResponseError(res.StatusCode, res.Status, body)
-	}
+		req.Header.Add("Accept", "application/json")
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.token))
+		res, err := client.netClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("request failed: %v", err)
+		}
 
-	var locsResp models.LocationsResponse
-	if err := json.Unmarshal(body, &locsResp); err != nil {
-		return nil, fmt.Errorf("failed to deserialize JSON response body: %v", err)
-	}
+		defer res.Body.Close()
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %v", err)
+		} else if res.StatusCode >= 500 {
+			attempts++
+			continue // Retry on internal server errors
+		} else if res.StatusCode != 200 {
+			return nil, getResponseError(res.StatusCode, res.Status, body)
+		}
 
-	return &locsResp, nil
+		var locsResp models.LocationsResponse
+		if err := json.Unmarshal(body, &locsResp); err != nil {
+			return nil, fmt.Errorf("failed to deserialize JSON response body: %v", err)
+		}
+
+		return &locsResp, nil
+	}
 }
 
 // Gets Kroger products based on a given search term. A locationId is optional and if given the product information
@@ -197,31 +228,44 @@ func (client *KClient) GetProducts(filterTerm string, locationId string, filterO
 		reqUrl = fmt.Sprintf("%s&filter.limit=%d", reqUrl, filterLimit)
 	}
 
-	// API Reference: https://developer.kroger.com/reference#operation/productGet
-	req, err := http.NewRequest("GET", reqUrl, nil)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %v", err)
-	}
+	var attempts = 0
+	for {
+		// Exponential backoff for retry on failed attempt
+		if attempts > maxAttempts {
+			return nil, fmt.Errorf("exceeded maximum retries")
+		} else if attempts > 0 {
+			var delay = 5 * math.Pow(2, float64(attempts))
+			time.Sleep(time.Second * time.Duration(delay))
+		}
+		// API Reference: https://developer.kroger.com/reference#operation/productGet
+		req, err := http.NewRequest("GET", reqUrl, nil)
+		if err != nil {
+			return nil, fmt.Errorf("request failed: %v", err)
+		}
 
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.token))
-	res, err := client.netClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request failed: %v", err)
-	}
+		req.Header.Add("Accept", "application/json")
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.token))
+		res, err := client.netClient.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("request failed: %v", err)
+		}
 
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %v", err)
-	} else if res.StatusCode != 200 {
-		return nil, getResponseError(res.StatusCode, res.Status, body)
-	}
+		defer res.Body.Close()
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %v", err)
+		} else if res.StatusCode >= 500 {
+			attempts++
+			continue // Retry on internal server errors
+		} else if res.StatusCode != 200 {
+			return nil, getResponseError(res.StatusCode, res.Status, body)
+		}
 
-	var prodResp models.ProductsResponse
-	if err := json.Unmarshal(body, &prodResp); err != nil {
-		return nil, fmt.Errorf("failed to deserialize JSON response body: %v", err)
-	}
+		var prodResp models.ProductsResponse
+		if err := json.Unmarshal(body, &prodResp); err != nil {
+			return nil, fmt.Errorf("failed to deserialize JSON response body: %v", err)
+		}
 
-	return &prodResp, nil
+		return &prodResp, nil
+	}
 }
