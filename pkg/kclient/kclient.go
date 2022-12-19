@@ -9,17 +9,19 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/jondysinger/grocery-data-api/pkg/models"
 )
 
 // Struct for interaction with Kroger API
 type KClient struct {
-	baseUrl string
-	id      string
-	secret  string
-	chain   string
-	token   string
+	baseUrl   string
+	id        string
+	secret    string
+	chain     string
+	token     string
+	netClient *http.Client
 }
 
 // Creates a new KClient
@@ -34,11 +36,16 @@ func New(baseUrl string, id string, secret string, chain string) (*KClient, erro
 		return nil, errors.New("parameter 'chain' is required")
 	}
 
+	var netClient = &http.Client{
+		Timeout: time.Second * 180,
+	}
+
 	client := KClient{
-		baseUrl: baseUrl,
-		id:      id,
-		secret:  secret,
-		chain:   chain,
+		baseUrl:   baseUrl,
+		id:        id,
+		secret:    secret,
+		chain:     chain,
+		netClient: netClient,
 	}
 	return &client, nil
 }
@@ -95,7 +102,7 @@ func (client *KClient) GetAuthToken() error {
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", client.id, client.secret)))))
-	res, err := http.DefaultClient.Do(req)
+	res, err := client.netClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("request failed: %v", err)
 	}
@@ -143,7 +150,7 @@ func (client *KClient) GetLocations(zipCode string, filterLimit int) (*models.Lo
 
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.token))
-	res, err := http.DefaultClient.Do(req)
+	res, err := client.netClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %v", err)
 	}
@@ -198,7 +205,7 @@ func (client *KClient) GetProducts(filterTerm string, locationId string, filterO
 
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", client.token))
-	res, err := http.DefaultClient.Do(req)
+	res, err := client.netClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %v", err)
 	}
