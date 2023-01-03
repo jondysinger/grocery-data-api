@@ -1,0 +1,36 @@
+#app {
+  max-width: 850px;
+  margin: 0 auto;
+}
+
+nav {
+  padding: 20px 0 20px 0;
+}
+
+#productNavigation {
+  text-align: center;
+}
+
+#navigateFarLeft {
+  margin-right: 15px;
+  cursor: pointer;
+}
+
+#navigateLeft {
+  margin-right: 15px;
+  cursor: pointer;
+}
+
+#navigateRight {
+  margin-left: 15px;
+  cursor: pointer;
+}
+
+#navigateFarRight {
+  margin-left: 15px;
+  cursor: pointer;
+}
+
+#navigateText {
+  font-size: 1.25em;
+}
