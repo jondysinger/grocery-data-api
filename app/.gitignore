@@ -37,6 +37,3 @@ build
 
 # json-server db
 db.json
-
-# WSL Remote Development files
-__debug_bin
