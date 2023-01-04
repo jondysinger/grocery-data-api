@@ -145,7 +145,7 @@ func TestGetProducts(t *testing.T) {
 		t.Fatalf("error during auth setup, %v", err)
 	}
 
-	products, err := client.GetProducts("milk", "", 0, 1)
+	products, err := client.GetProducts("milk", "70100393", 0, 1)
 	if err != nil {
 		t.Fatalf("expected success but got error, %v", err)
 	} else if len(products.Data) != 1 {
