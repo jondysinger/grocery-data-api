@@ -19,3 +19,6 @@ vendor/
 
 # WSL Remote Development files
 __debug_bin
+
+# Build folder contents
+build/

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jondysinger/grocery-data-api/pkg/models"
+	"github.com/jondysinger/grocery-data/api/pkg/models"
 )
 
 const maxAttempts = 6

@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"net/http"
@@ -6,9 +6,14 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/jondysinger/grocery-data/api/pkg/envcfg"
 )
 
-func (app *application) routes() http.Handler {
+type App struct {
+	Config *envcfg.EnvCfg
+}
+
+func (app *App) Routes() http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
@@ -22,8 +27,8 @@ func (app *application) routes() http.Handler {
 
 	r.Use(middleware.Recoverer)
 
-	r.Get("/locations", app.Locations)
-	r.Get("/products", app.Products)
+	r.Get("/locations", app.locations)
+	r.Get("/products", app.products)
 
 	return r
 }

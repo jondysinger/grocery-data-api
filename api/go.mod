@@ -1,4 +1,4 @@
-module github.com/jondysinger/grocery-data-api
+module github.com/jondysinger/grocery-data/api
 
 go 1.19
 

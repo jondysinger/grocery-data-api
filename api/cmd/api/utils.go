@@ -1,14 +1,14 @@
-package main
+package api
 
 import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/jondysinger/grocery-data-api/pkg/models"
+	"github.com/jondysinger/grocery-data/api/pkg/models"
 )
 
 // Writes the given data as a json response
-func (app *application) writeJson(w http.ResponseWriter, status int, data interface{}, headers ...http.Header) error {
+func (app *App) writeJson(w http.ResponseWriter, status int, data interface{}, headers ...http.Header) error {
 	out, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -31,7 +31,7 @@ func (app *application) writeJson(w http.ResponseWriter, status int, data interf
 }
 
 // Writes an error as a json response with the given status code
-func (app *application) errorJson(w http.ResponseWriter, err error, statusCode int) error {
+func (app *App) errorJson(w http.ResponseWriter, err error, statusCode int) error {
 	var payload models.JsonResponse
 	payload.Error = true
 	payload.Message = err.Error()

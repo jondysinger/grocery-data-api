@@ -1,14 +1,14 @@
-package main
+package api
 
 import (
 	"net/http"
 	"strconv"
 
-	"github.com/jondysinger/grocery-data-api/pkg/kclient"
+	"github.com/jondysinger/grocery-data/api/pkg/kclient"
 )
 
 // Creates a Kroger API client and retrieves an OAuth2 token
-func (app *application) setupClient() (*kclient.KClient, error) {
+func (app *App) setupClient() (*kclient.KClient, error) {
 	var client *kclient.KClient
 	var err error
 
@@ -32,7 +32,7 @@ func (app *application) setupClient() (*kclient.KClient, error) {
 }
 
 // Gets locations based on zip
-func (app *application) Locations(w http.ResponseWriter, r *http.Request) {
+func (app *App) locations(w http.ResponseWriter, r *http.Request) {
 	zipcode := r.URL.Query().Get("zipcode")
 	filterLimit := r.URL.Query().Get("filterLimit")
 
@@ -61,7 +61,7 @@ func (app *application) Locations(w http.ResponseWriter, r *http.Request) {
 }
 
 // Gets products based on filter and location
-func (app *application) Products(w http.ResponseWriter, r *http.Request) {
+func (app *App) products(w http.ResponseWriter, r *http.Request) {
 	filterTerm := r.URL.Query().Get("filterTerm")
 	locationId := r.URL.Query().Get("locationId")
 	filterOffset := r.URL.Query().Get("filterOffset")
