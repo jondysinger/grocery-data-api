@@ -7,7 +7,6 @@
     "clean:build": "rimraf ./build && mkdir build",
     "prebuild": "npm run clean:build",
     "build": "webpack --config webpack.config.prod.js",
-    "postbuild": "npm run serve:build",
     "serve:build": "http-server ./build"
   },
   "jest": {
