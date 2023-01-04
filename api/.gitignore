@@ -17,8 +17,5 @@ vendor/
 # Environment variables
 *.env
 
-# WSL Remote Development files
-__debug_bin
-
 # Build folder contents
 build/
