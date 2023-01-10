@@ -53,23 +53,25 @@ const ProductList = ({
     <table className="table">
       <thead>
         <tr>
-          <th>Image</th>
+          <th className="text-center">Image</th>
           <th>Description</th>
-          <th>Stock Level</th>
+          <th className="text-center">Stock Level</th>
         </tr>
       </thead>
       <tbody>
         {products.data.map((product) => {
           return (
             <tr key={product.productId}>
-              <td>
+              <td className="text-center">
                 <img
                   src={getProductThumbnail(product)}
                   alt="Product Thumbnail"
                 ></img>
               </td>
               <td>{product.description}</td>
-              <td>{getProductInventoryLevel(product)}</td>
+              <td className="text-center">
+                {getProductInventoryLevel(product)}
+              </td>
             </tr>
           );
         })}
