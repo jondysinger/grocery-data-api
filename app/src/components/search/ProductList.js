@@ -42,6 +42,23 @@ function getProductInventoryLevel(product) {
   }
 }
 
+function getPaginationText(pagination) {
+  return ""
+    .concat(pagination.start + 1)
+    .concat(" to ")
+    .concat(
+      pagination.start + pagination.limit > pagination.total
+        ? pagination.total
+        : pagination.start + pagination.limit
+    )
+    .concat(" of ")
+    .concat(
+      pagination.total > searchDefaults.MAX_PRODUCTS
+        ? searchDefaults.MAX_PRODUCTS
+        : pagination.total
+    );
+}
+
 const ProductList = ({
   products,
   onNavigateFarLeftCLick,
@@ -94,16 +111,7 @@ const ProductList = ({
           className="fa-lg"
         />
         <span id="navigateText">
-          {products.meta.pagination.start + 1}
-          {" to "}
-          {products.meta.pagination.start + products.meta.pagination.limit >
-          products.meta.pagination.total
-            ? products.meta.pagination.total
-            : products.meta.pagination.start + products.meta.pagination.limit}
-          {" of "}
-          {products.meta.pagination.total > searchDefaults.MAX_PRODUCTS
-            ? searchDefaults.MAX_PRODUCTS
-            : products.meta.pagination.total}
+          {getPaginationText(products.meta.pagination)}
         </span>
         <FontAwesomeIcon
           icon={faAngleRight}
